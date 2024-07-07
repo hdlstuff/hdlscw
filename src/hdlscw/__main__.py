@@ -1,0 +1,72 @@
+import argparse
+import hdlinfo
+from .wrapper import *
+import sys
+from typing import *
+import dataclasses
+import importlib
+
+
+def printAsList(obj: object, nameList: List[str], prefix: str = "", print=print) -> None:
+    for name in nameList:
+        if isinstance(obj, dict):
+            v = obj[name]
+        else:
+            v = getattr(obj, name)
+
+        print(f"{prefix}.{name} = {v}")
+
+
+def main() -> None:
+    argParser = argparse.ArgumentParser(prog="hdlscw")
+
+    g = argParser.add_argument_group("hdlscw")
+    g.add_argument(
+        "--import-package", "-i",
+        type=str, required=False, action="append", nargs=1,
+        help="Python packages that provide 'InterfaceHandler's to load prior to generation."
+    )
+    g.add_argument("--input-hdlinfo", type=str, required=True, help="Input .hdlinfo.json file.")
+    g.add_argument("--single-file", action="store_true", help="Single file (hpp) mode.")
+    g.add_argument("--output-hpp", type=str, required=True, help="Output hpp file.")
+    g.add_argument("--output-cpp", type=str, help="Output cpp file. (not used in single file mode)")
+
+    WrapperConfig.configureArgParser(argParser)
+    ns = argParser.parse_args(sys.argv[1:])
+
+    if ns.import_package is not None:
+        for import_package in ns.import_package:
+            name = import_package[0]
+            print(f"importing: {name}")
+            importlib.import_module(name)
+
+    inputHdlInfo = ns.input_hdlinfo
+    singleFile = ns.single_file
+    outputHpp = ns.output_hpp
+    outputCpp = ns.output_cpp
+
+    if not singleFile:
+        if outputCpp is None:
+            raise RuntimeError("--output-cpp parameter is required if not in single file mode.")
+
+    wrapperConfig = WrapperConfig.fromNamespace(ns)
+
+    print("wrapper generation:")
+    printAsList(locals(), ["inputHdlInfo", "singleFile", "outputHpp", "outputCpp"], "hdlscw")
+    printAsList(wrapperConfig, [x.name for x in dataclasses.fields(wrapperConfig) if x.name != "options"], "hdlscw.wrapperConfig")
+    printAsList(wrapperConfig.options, sorted(wrapperConfig.options.keys()), "hdlscw.wrapperConfig.options")
+
+    wrapper = Wrapper(hdlinfo.Module.fromJsonFile(inputHdlInfo), wrapperConfig)
+
+    if singleFile:
+        with open(outputHpp, "w") as f:
+            f.write(wrapper.cg.genCode("    "))
+    else:
+        with open(outputHpp, "w") as f:
+            f.write(wrapper.cg.genCodeHdr())
+
+        with open(outputCpp, "w") as f:
+            f.write(wrapper.cg.genCodeImpl())
+
+
+main()
