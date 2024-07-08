@@ -361,7 +361,7 @@ class Wrapper:
                     d.iwriteln("/* BEGIN: clock ports (decl) */")
                     for port in ports:
                         dir = port.direction.removesuffix("put")
-                        d.iwriteln(f"sc_core::sc_clk_{dir} {port.name};")
+                        d.iwriteln(f"sc_core::sc_{dir}_clk {port.name};")
                     d.iwriteln("/* END: clock ports (decl) */")
                     d.separate()
 
@@ -398,7 +398,7 @@ class Wrapper:
                     d.iwriteln("/* BEGIN: inverted reset signals */")
                     for port in ports:
                         if port.direction == hdlinfo.PortDirection.input:
-                            d.iwriteln(f"{signal_type(port)} {port.name}_INVERTED_")
+                            d.iwriteln(f"{signal_type(port)} {port.name}_INVERTED_;")
                     d.iwriteln("/* END: inverted reset signals */")
                     d.separate()
                     d.iwriteln("void generateInvertedResetPorts();")
