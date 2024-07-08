@@ -170,11 +170,16 @@ class WrapperConfig:
 
             if TypeUtils.isOptional(field.type):
                 t = TypeUtils.typeArguments(t)[0]
+            
+            helpText = field.metadata["help"]
+
+            if field.default is not None:
+                helpText = f"{helpText} (default = '{field.default}')"
 
             if t in (str, int, float):
-                g.add_argument(f"--{kebabName}", type=t, default=field.default, help=field.metadata["help"])
+                g.add_argument(f"--{kebabName}", type=t, default=field.default, help=helpText)
             elif t == bool:
-                g.add_argument(f"--{kebabName}", type=t, default=field.default, choices=[True, False], help=field.metadata["help"])
+                g.add_argument(f"--{kebabName}", type=t, default=field.default, choices=[True, False], help=helpText)
             else:
                 raise TypeError(f"not recognized type for configuring the argument parser: '{t}'")
 
