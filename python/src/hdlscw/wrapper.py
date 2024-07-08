@@ -131,7 +131,7 @@ class WrapperConfig:
     verilatedModuleName: str = _field(
         "V$", help="Name of the Verilated module that is being wrapped. '$' replaces the module name in the hdlinfo file.")
     verilatedIncludeStr: str = _field(
-        "<V$.h>", help="Include string for the Verilated module.")
+        "<$.h>", help="Include string for the Verilated module. '$' replaces the Verilated module name.")
     outputClassName: str = _field(
         "Sc$", help="Output wrapper class name. '$' replaces the module name in the hdlinfo file.")
     includeGuardStr: str = _field(
@@ -321,6 +321,11 @@ class Wrapper:
             if not cfg.templated:
                 className = cfg.verilatedModuleName.replace("$", module.name)
                 instantiateVerilatedModule(className)
+
+                cg.addHdrInclude(
+                    cfg.verilatedIncludeStr.replace("$", className)
+                )
+                cg.addHdrIncludeBlock(lambda d: d.separate())
             else:
                 cg.addTemplateParam("VerilatedModule")
                 instantiateVerilatedModule("VerilatedModule")
@@ -334,6 +339,7 @@ class Wrapper:
             cg.addCtorParam("sc_core::sc_module_name const& $",
                             "moduleName", '""')
             cg.addCtorInit(f"sc_module{{ moduleName }}")
+            cg.addCtorInit(f"verilatedModule_(\"verilatedModule\")")
 
             def implIncludeBlock(d: codegen.Dumper) -> None:
                 if cfg.includeHppFile and not cg.isInline:
