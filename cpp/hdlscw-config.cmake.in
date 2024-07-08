@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.15)
 
+# https://cmake.org/cmake/help/book/mastering-cmake/chapter/Finding%20Packages.html
+get_filename_component(HDLSCW_CONFIG_CMAKE "${CMAKE_CURRENT_LIST_FILE}" PATH)
+get_filename_component(HDLSCW_INSTALL_PREFIX "${HDLSCW_CONFIG_CMAKE}/../.." ABSOLUTE)
+
 function(generated_source)
     cmake_parse_arguments(
         GENSRC_ARG
@@ -39,7 +43,7 @@ function(generated_source)
 
     file(MAKE_DIRECTORY "${GENSRC_OUTDIR}")
 
-    set(GENSRC_CMAKE "${GENSRC_OUTDIR}/gensrc.cmake")
+    set(GENSRC_CMAKE "${GENSRC_OUTDIR}/${GENSRC_PREFIX_LOWER}.cmake")
 
     # the target depends on ${GENSRC_CMAKE_COPY} rather than ${GENSRC_CMAKE}.
     # reconfiguration happens only when ${GENSRC_CMAKE_COPY} changes
@@ -49,7 +53,7 @@ function(generated_source)
     # If we were to directly depend on ${GENSRC_CMAKE}, whenever the command executes
     # we would need to reconfigure. Now, we don't do that, we reconfigure only
     # when the file list described in ${GENSRC_CMAKE} truly changes.
-    set(GENSRC_CMAKE_COPY "${GENSRC_OUTDIR}/gensrc.cmake.copy")
+    set(GENSRC_CMAKE_COPY "${GENSRC_OUTDIR}/${GENSRC_PREFIX_LOWER}.cmake.copy")
 
     if(NOT GENSRC_ARG_COMMAND)
         message(FATAL_ERROR "${GENSRC_FUNC_NAME}: a COMMAND must be provided!")
@@ -64,11 +68,11 @@ function(generated_source)
         ${GENSRC_ARG_ARGS}
     )
 
-    set(GENSRC_ARGS "${GENSRC_OUTDIR}/gensrc.args")
+    set(GENSRC_ARGS "${GENSRC_OUTDIR}/${GENSRC_PREFIX_LOWER}.args")
     set(GENSRC_OUTDATED OFF)
 
     if(NOT EXISTS "${GENSRC_ARGS}" OR NOT EXISTS "${GENSRC_CMAKE_COPY}")
-        message(STATUS "${GENSRC_FUNC_NAME}: gensrc.cmake.copy does not exist")
+        message(STATUS "${GENSRC_FUNC_NAME}: '${GENSRC_CMAKE_COPY}' does not exist")
         set(GENSRC_OUTDATED ON)
     else()
         file(READ "${GENSRC_ARGS}" GENSRC_COMMAND_OLD)
@@ -171,7 +175,12 @@ function(hdlscw)
     if(NOT HDLSCW_HDLINFO)
         message(FATAL_ERROR "hdlscw: HDLINFO is missing, an '*.hdlinfo.json' source is needed.")
     else()
+        get_filename_component(HDLSCW_HDLINFO "${HDLSCW_HDLINFO}" ABSOLUTE BASE_DIR)
         list(APPEND HDLSCW_ARGS "--input-hdlinfo" "${HDLSCW_HDLINFO}")
+    endif()
+
+    if(NOT EXISTS "${HDLSCW_HDLINFO}")
+        message(FATAL_ERROR "hdlscw: HDLINFO does not exist. Make sure that '${HDLSCW_HDLINFO}' exists.")
     endif()
 
     if(HDLSCW_SINGLE_FILE)
@@ -187,13 +196,10 @@ function(hdlscw)
     endif()
 
     if(NOT HDLSCW_PREFIX)
-        string(
-            REGEX
-            REPLACE
-            [[(.*)\.hdlinfo\.json]]
-            [[\1]]
+        get_filename_component(
             HDLSCW_PREFIX
             "${HDLSCW_HDLINFO}"
+            NAME_WE
         )
     endif()
 
@@ -203,12 +209,29 @@ function(hdlscw)
 
     if(HDLSCW_OUTPUT_CLASS_NAME)
         list(APPEND HDLSCW_ARGS "--output-class-name" "${HDLSCW_OUTPUT_CLASS_NAME}")
+        list(APPEND HDLSCW_ARGS "--output-hpp" "${HDLSCW_OUTPUT_CLASS_NAME}.hpp")
+
+        if(NOT HDLSCW_SINGLE_FILE)
+            list(APPEND HDLSCW_ARGS "--output-cpp" "${HDLSCW_OUTPUT_CLASS_NAME}.cpp")
+        endif()
+    else()
+        string(MAKE_C_IDENTIFIER "${HDLSCW_PREFIX}" _VALID_C_IDENTIFIER)
+        list(APPEND HDLSCW_ARGS "--output-class-name" "${_VALID_C_IDENTIFIER}")
+        list(APPEND HDLSCW_ARGS "--output-hpp" "${_VALID_C_IDENTIFIER}.hpp")
+
+        if(NOT HDLSCW_SINGLE_FILE)
+            list(APPEND HDLSCW_ARGS "--output-cpp" "${_VALID_C_IDENTIFIER}.cpp")
+        endif()
     endif()
 
     set(HDLSCW_COMMAND python3 -m hdlscw.cmake)
 
+    target_include_directories("${HDLSCW_TARGET}" PUBLIC "${HDLSCW_INSTALL_PREFIX}/include")
+    # message(STATUS "${HDLSCW_INSTALL_PREFIX}")
+    # message(STATUS "${HDLSCW_INSTALL_PREFIX}/include")
+
     generated_source(
-        TARGET "${TARGET}"
+        TARGET "${HDLSCW_TARGET}"
         PREFIX "${HDLSCW_PREFIX}"
         FUNC_NAME "hdlscw"
         COMMAND "${HDLSCW_COMMAND}"

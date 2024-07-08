@@ -15,10 +15,14 @@ class CMakeGenSrc:
     def configureArgParser(argParser: argparse.ArgumentParser) -> None:
         g = argParser.add_argument_group("CMake generated_source")
 
-        g.add_argument("--gensrc-outdir", type=str, required=True, help="Output directory for generated artifacts.")
-        g.add_argument("--gensrc-cmake", type=str, required=True, help="Output file describing the generation.")
-        g.add_argument("--gensrc-prefix", type=str, required=True, help="CMake prefix to be added to generated artifacts.")
-        g.add_argument("--gensrc-debug", action="store_true", help="Verbose debug output.")
+        g.add_argument("--gensrc-outdir", type=str, required=True,
+                       help="Output directory for generated artifacts.")
+        g.add_argument("--gensrc-cmake", type=str, required=True,
+                       help="Output file describing the generation.")
+        g.add_argument("--gensrc-prefix", type=str, required=True,
+                       help="CMake prefix to be added to generated artifacts.")
+        g.add_argument("--gensrc-debug", action="store_true",
+                       help="Verbose debug output.")
 
     def __init__(self) -> None:
         self._ready = False
@@ -57,6 +61,8 @@ class CMakeGenSrc:
 
     def outputFile(self, outputFile: Path, isTargetSource: bool = True) -> Path:
         outputFile = self._relOutdir(outputFile)
+        print(f"making directory: {os.path.dirname(outputFile)}")
+        os.makedirs(os.path.dirname(outputFile), exist_ok=True)
         self._outputFiles.append(outputFile)
         if isTargetSource:
             self._targetSources.append(outputFile)
