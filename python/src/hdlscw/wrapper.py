@@ -29,7 +29,8 @@ def registerInterfaceHandlerCustom(name: str) -> Callable[[Type[T]], Type[T]]:
     def wrap(cls: Type[TT]) -> Type[TT]:
         if name in _interfaceHandlers:
             # TODO have a custom exception class
-            raise RuntimeError("attempt to register an interface handler with an already taken name")
+            raise RuntimeError(
+                "attempt to register an interface handler with an already taken name")
         _interfaceHandlers[name] = cls
         return cls
     return wrap
@@ -39,7 +40,8 @@ def registerInterfaceHandler(cls: Type[T]) -> Type[T]:
     name = cls.__qualname__
     if name in _interfaceHandlers:
         # TODO have a custom exception class
-        raise RuntimeError("attempt to register an interface handler with an already taken name")
+        raise RuntimeError(
+            "attempt to register an interface handler with an already taken name")
     _interfaceHandlers[name] = cls
     return cls
 
@@ -128,21 +130,33 @@ def _field(default: Optional[T] = None, default_factory: Optional[Callable[[], T
 class WrapperConfig:
     verilatedModuleName: str = _field(
         "V$", help="Name of the Verilated module that is being wrapped. '$' replaces the module name in the hdlinfo file.")
-    verilatedIncludeStr: str = _field("<V$.h>", help="Include string for the Verilated module.")
-    outputClassName: str = _field("Sc$", help="Output wrapper class name. '$' replaces the module name in the hdlinfo file.")
+    verilatedIncludeStr: str = _field(
+        "<V$.h>", help="Include string for the Verilated module.")
+    outputClassName: str = _field(
+        "Sc$", help="Output wrapper class name. '$' replaces the module name in the hdlinfo file.")
     includeGuardStr: str = _field(
         "__$_HPP_INCLUDED__", help="Include guard form. Should be all upper case. '$' replaces the output wrapper class name.")
-    includeHppFile: bool = _field(True, help="Generated CPP file should include the generated HPP file.")
-    hppIncludeStr: Optional[str] = _field("<$.hpp>", help="Include string. '$' replaces the output wrapper class name.")
+    includeHppFile: bool = _field(
+        True, help="Generated CPP file should include the generated HPP file.")
+    hppIncludeStr: Optional[str] = _field(
+        "<$.hpp>", help="Include string. '$' replaces the output wrapper class name.")
     markFinal: bool = _field(True, help="Marks the wrapper class 'final'.")
-    templated: bool = _field(False, help="Makes the wrapper class templated on 'VerilatedModule'.")
-    hdlscwIncludeStr: str = _field("<hdlscw/$>", help="Include string for hdlscw headers. '$' replaces the header file name")
-    inheritsWrapperBase: bool = _field(True, help="Makes the class inherit 'hdlscw::wrapper_base'.")
-    implementTraceVerilated: bool = _field(True, help="Implements the 'traceVerilated' function.")
-    useTracedTestMacro: bool = _field(True, help="Wraps the 'traceVerilated' function between #if defined(...)/#endif.")
-    tracedTestMacroIdentifier: Optional[str] = _field("VERILATED_TRACE_ENABLED", help="Macro identifier for the condition of #if defined(...).")
-    systemcIncludeStr: str = _field("<$>", help="Include string for SystemC libraries. '$' replaces the header file name, such as 'systemc'.")
-    printRequestedOptions: bool = _field(True, help="Prints accessed options by interface handlers. Useful for debugging.")
+    templated: bool = _field(
+        False, help="Makes the wrapper class templated on 'VerilatedModule'.")
+    hdlscwIncludeStr: str = _field(
+        "<hdlscw/$>", help="Include string for hdlscw headers. '$' replaces the header file name")
+    inheritsWrapperBase: bool = _field(
+        True, help="Makes the class inherit 'hdlscw::wrapper_base'.")
+    implementTraceVerilated: bool = _field(
+        True, help="Implements the 'traceVerilated' function.")
+    useTracedTestMacro: bool = _field(
+        True, help="Wraps the 'traceVerilated' function between #if defined(...)/#endif.")
+    tracedTestMacroIdentifier: Optional[str] = _field(
+        "VERILATED_TRACE_ENABLED", help="Macro identifier for the condition of #if defined(...).")
+    systemcIncludeStr: str = _field(
+        "<$>", help="Include string for SystemC libraries. '$' replaces the header file name, such as 'systemc'.")
+    printRequestedOptions: bool = _field(
+        True, help="Prints accessed options by interface handlers. Useful for debugging.")
 
     # supposed to passed by command line
     options: Dict[str, str] = dataclasses.field(default_factory=lambda: {})
@@ -150,7 +164,8 @@ class WrapperConfig:
     def requestOption(self, s: str, t: Callable[[str], T], default: T = "") -> T:
         if self.printRequestedOptions:
             if s not in _alreadyRequestedOptions:
-                print(f"[info] WrapperConfig: option '{s}' is accessed (default = '{default}')")
+                print(f"[info] WrapperConfig: option '{
+                      s}' is accessed (default = '{default}')")
                 _alreadyRequestedOptions.append(s)
         if (v := self.options.get(s, None)) is not None:
             return t(v)
@@ -170,20 +185,24 @@ class WrapperConfig:
 
             if TypeUtils.isOptional(field.type):
                 t = TypeUtils.typeArguments(t)[0]
-            
+
             helpText = field.metadata["help"]
 
             if field.default is not None:
                 helpText = f"{helpText} (default = '{field.default}')"
 
             if t in (str, int, float):
-                g.add_argument(f"--{kebabName}", type=t, default=field.default, help=helpText)
+                g.add_argument(f"--{kebabName}", type=t,
+                               default=field.default, help=helpText)
             elif t == bool:
-                g.add_argument(f"--{kebabName}", type=t, default=field.default, choices=[True, False], help=helpText)
+                g.add_argument(
+                    f"--{kebabName}", type=t, default=field.default, choices=[True, False], help=helpText)
             else:
-                raise TypeError(f"not recognized type for configuring the argument parser: '{t}'")
+                raise TypeError(
+                    f"not recognized type for configuring the argument parser: '{t}'")
 
-        g.add_argument("-o", "--option", action="append", nargs=2, help="Adds an option: -o NAME VALUE")
+        g.add_argument("-o", "--option", action="append",
+                       nargs=2, help="Adds an option: -o NAME VALUE")
 
     @staticmethod
     def fromNamespace(ns: argparse.Namespace) -> "WrapperConfig":
@@ -294,6 +313,8 @@ class Wrapper:
             cg.makeCtorExplicit()
             cg.addBaseClass("public sc_core::sc_module")
 
+            cg.addPublicBlock(f"SC_HAS_PROCESS({outputClassName});")
+
             def instantiateVerilatedModule(className: str):
                 cg.addPrivateBlock(f"{className} verilatedModule_;")
 
@@ -307,20 +328,23 @@ class Wrapper:
             cg.addHdrInclude(cfg.systemcIncludeStr.replace("$", "systemc"))
             cg.addHdrInclude(cfg.systemcIncludeStr.replace("$", "tlm"))
             cg.addHdrIncludeBlock(lambda d: d.separate())
-            cg.useIncludeGuard(cfg.includeGuardStr.replace("$", outputClassName.upper()))
+            cg.useIncludeGuard(cfg.includeGuardStr.replace(
+                "$", outputClassName.upper()))
 
             cg.addCtorParam("sc_core::sc_module_name const& $",
                             "moduleName", '""')
-            cg.addCtorInit(f"sc_module{{ name }}")
+            cg.addCtorInit(f"sc_module{{ moduleName }}")
 
             def implIncludeBlock(d: codegen.Dumper) -> None:
                 if cfg.includeHppFile and not cg.isInline:
-                    includeStr = cfg.hppIncludeStr.replace("$", outputClassName)
+                    includeStr = cfg.hppIncludeStr.replace(
+                        "$", outputClassName)
                     isValid = (includeStr.startswith("<") and includeStr.endswith(">")) or \
                         (includeStr.startswith("\"") and includeStr.endswith("\""))
                     if not isValid:
                         # TODO have a specific exception class
-                        raise RuntimeError(f"hppIncludeStr is not valid: {includeStr}")
+                        raise RuntimeError(
+                            f"hppIncludeStr is not valid: {includeStr}")
                     d.iwriteln(f"#include {includeStr}")
 
             cg.addImplIncludeBlock(implIncludeBlock)
@@ -341,7 +365,8 @@ class Wrapper:
                     return "bool"
 
             def port_type(p: hdlinfo.Port) -> str:
-                assert p.direction in [hdlinfo.PortDirection.input, hdlinfo.PortDirection.output]
+                assert p.direction in [
+                    hdlinfo.PortDirection.input, hdlinfo.PortDirection.output]
                 d = p.direction.removesuffix("put")
                 return f"sc_core::sc_{d}<{data_type(p)}>"
 
@@ -349,7 +374,8 @@ class Wrapper:
                 return f"sc_core::sc_signal<{data_type(p)}>"
 
             def processClockPorts() -> None:
-                ports = list(self._module.filterPorts(lambda port: port.kind == hdlinfo.PortKind.clock))
+                ports = list(self._module.filterPorts(
+                    lambda port: port.kind == hdlinfo.PortKind.clock))
 
                 assert all(
                     [not x.isBus for x in ports]
@@ -368,7 +394,8 @@ class Wrapper:
                 def ctorBlock(d: codegen.Dumper) -> None:
                     d.iwriteln("/* BEGIN: clock ports (conn) */")
                     for port in ports:
-                        d.iwriteln(f"{port.name}(verilatedModule_.{port.name});")
+                        d.iwriteln(
+                            f"{port.name}(verilatedModule_.{port.name});")
                     d.iwriteln("/* END: clock ports (conn) */")
                     d.separate()
 
@@ -379,7 +406,8 @@ class Wrapper:
 
             def processResetPorts() -> None:
                 ports = list(self._module.filterPorts(
-                    lambda port: port.kind in [hdlinfo.PortKind.reset, hdlinfo.PortKind.asyncReset]
+                    lambda port: port.kind in [
+                        hdlinfo.PortKind.reset, hdlinfo.PortKind.asyncReset]
                 ))
 
                 def publicBlock(d: codegen.Dumper) -> None:
@@ -398,7 +426,8 @@ class Wrapper:
                     d.iwriteln("/* BEGIN: inverted reset signals */")
                     for port in ports:
                         if port.direction == hdlinfo.PortDirection.input:
-                            d.iwriteln(f"{signal_type(port)} {port.name}_INVERTED_;")
+                            d.iwriteln(f"{signal_type(port)} {
+                                       port.name}_INVERTED_;")
                     d.iwriteln("/* END: inverted reset signals */")
                     d.separate()
                     d.iwriteln("void generateInvertedResetPorts();")
@@ -425,13 +454,15 @@ class Wrapper:
                     d.separate()
 
                 def implBlock(d: codegen.Dumper) -> None:
-                    self.cg.dumpMemberImpl(d, "void $()", "generateInvertedResetPorts")
+                    self.cg.dumpMemberImpl(
+                        d, "void $()", "generateInvertedResetPorts")
                     d.iwriteln(f" {{")
                     d.indent_in()
                     d.separate()
                     for port in ports:
                         if port.direction == hdlinfo.PortDirection.input:
-                            d.iwriteln(f"{port.name}_INVERTED_.write(!{port.name}.read());")
+                            d.iwriteln(
+                                f"{port.name}_INVERTED_.write(!{port.name}.read());")
                     d.separate()
                     d.indent_out()
                     d.iwriteln(f"}}")
@@ -483,7 +514,8 @@ class Wrapper:
                 def ctorBlock(d: codegen.Dumper) -> None:
                     d.iwriteln("/* BEGIN: data ports (conn) */")
                     for port in ports:
-                        d.iwriteln(f"{port.name}(verilatedModule_.{port.name});")
+                        d.iwriteln(
+                            f"{port.name}(verilatedModule_.{port.name});")
                     d.iwriteln("/* END: data ports (conn) */")
                     d.separate()
 
@@ -495,14 +527,16 @@ class Wrapper:
         processPorts()
 
         def inheritWrapperBase() -> None:
-            cg.addHdrInclude(cfg.hdlscwIncludeStr.replace("$", "wrapper_base.hpp"))
+            cg.addHdrInclude(cfg.hdlscwIncludeStr.replace(
+                "$", "wrapper_base.hpp"))
             cg.addHdrIncludeBlock(lambda d: d.separate())
 
             cg.addBaseClass("public hdlscw::wrapper_base")
             cg.makeDtorVirtual()
 
             def publicBlock(d: codegen.Dumper) -> None:
-                d.iwriteln("sc_core::sc_module* getThisModule() noexcept override {")
+                d.iwriteln(
+                    "sc_core::sc_module* getThisModule() noexcept override {")
                 d.indent_in()
                 d.iwriteln("return this;")
                 d.indent_out()
@@ -510,7 +544,8 @@ class Wrapper:
 
                 d.separate()
 
-                d.iwriteln("sc_core::sc_module const* getThisModule() const noexcept override {")
+                d.iwriteln(
+                    "sc_core::sc_module const* getThisModule() const noexcept override {")
                 d.indent_in()
                 d.iwriteln("return this;")
                 d.indent_out()
@@ -518,7 +553,8 @@ class Wrapper:
 
                 d.separate()
 
-                d.iwriteln("sc_core::sc_module* getVerilatedModule() noexcept override {")
+                d.iwriteln(
+                    "sc_core::sc_module* getVerilatedModule() noexcept override {")
                 d.indent_in()
                 d.iwriteln("return &verilatedModule_;")
                 d.indent_out()
@@ -526,7 +562,8 @@ class Wrapper:
 
                 d.separate()
 
-                d.iwriteln("sc_core::sc_module const* getVerilatedModule() const noexcept override {")
+                d.iwriteln(
+                    "sc_core::sc_module const* getVerilatedModule() const noexcept override {")
                 d.indent_in()
                 d.iwriteln("return &verilatedModule_;")
                 d.indent_out()
@@ -536,11 +573,14 @@ class Wrapper:
 
                 if cfg.implementTraceVerilated:
                     if cfg.useTracedTestMacro:
-                        d.iwriteln(f"#if defined({cfg.tracedTestMacroIdentifier})")
+                        d.iwriteln(
+                            f"#if defined({cfg.tracedTestMacroIdentifier})")
 
-                    d.iwriteln("void traceVerilated(VerilatedVcdC* tfp, int levels, int options = 0) override {")
+                    d.iwriteln(
+                        "void traceVerilated(VerilatedVcdC* tfp, int levels, int options = 0) override {")
                     d.indent_in()
-                    d.iwriteln("return verilatedModule_.trace(tfp, levels, options);")
+                    d.iwriteln(
+                        "return verilatedModule_.trace(tfp, levels, options);")
                     d.indent_out()
                     d.iwriteln("}")
 
@@ -571,25 +611,31 @@ class Wrapper:
 
                 if "hdlscw.interfaceHandler" in interface.args:
                     interfaceHandlerName: str = interface.args["hdlscw.interfaceHandler"]
-                    interfaceHandler = getInterfaceHandler(interfaceHandlerName)
+                    interfaceHandler = getInterfaceHandler(
+                        interfaceHandlerName)
 
                     if interfaceHandler is None:
-                        print(f"[warn] wrapper: requested interface handler could not be found '{interfaceHandlerName}'")
+                        print(f"[warn] wrapper: requested interface handler could not be found '{
+                              interfaceHandlerName}'")
                     else:
-                        done = interfaceHandler.processInterface(self, cg, interface)
+                        done = interfaceHandler.processInterface(
+                            self, cg, interface)
 
                         if not done:
-                            print(f"[warn] wrapper: requested interface handler failed '{interfaceHandlerName}'")
+                            print(f"[warn] wrapper: requested interface handler failed '{
+                                  interfaceHandlerName}'")
 
                 if not done:
                     for interfaceHandler in registeredInterfaceHandlers():
-                        done = interfaceHandler.processInterface(self, cg, interface)
+                        done = interfaceHandler.processInterface(
+                            self, cg, interface)
 
                         if done:
                             break
 
                 if not done:
                     # TODO have a custom exception class
-                    raise RuntimeError(f"interface could not be handled: name = '{interface.name}', kind = '{interface.kind}'")
+                    raise RuntimeError(f"interface could not be handled: name = '{
+                                       interface.name}', kind = '{interface.kind}'")
 
         processInterfaces()
