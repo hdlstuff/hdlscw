@@ -314,6 +314,7 @@ class Wrapper:
             cg.addBaseClass("public sc_core::sc_module")
 
             cg.addPublicBlock(f"SC_HAS_PROCESS({outputClassName});")
+            cg.addPublicBlock(lambda d: d.separate())
 
             def instantiateVerilatedModule(className: str):
                 cg.addPrivateBlock(f"{className} verilatedModule_;")
@@ -401,7 +402,8 @@ class Wrapper:
                     d.iwriteln("/* BEGIN: clock ports (conn) */")
                     for port in ports:
                         d.iwriteln(
-                            f"{port.name}(verilatedModule_.{port.name});")
+                            f"verilatedModule_.{port.name}({port.name});"
+                        )
                     d.iwriteln("/* END: clock ports (conn) */")
                     d.separate()
 
@@ -444,7 +446,8 @@ class Wrapper:
                     d.iwriteln("/* BEGIN: reset ports (conn) */")
                     for port in ports:
                         d.iwriteln(
-                            f"{port.name}(verilatedModule_.{port.name});")
+                            f"verilatedModule_.{port.name}({port.name});"
+                        )
                     d.iwriteln("/* END: reset ports (conn) */")
                     d.separate()
                     d.iwriteln("/* generate inverted resets */")
@@ -496,7 +499,8 @@ class Wrapper:
                     d.iwriteln("/* BEGIN: interrupt ports (conn) */")
                     for port in ports:
                         d.iwriteln(
-                            f"{port.name}(verilatedModule_.{port.name});")
+                            f"verilatedModule_.{port.name}({port.name});"
+                        )
                     d.iwriteln("/* END: interrupt ports (conn) */")
                     d.separate()
 
@@ -521,7 +525,8 @@ class Wrapper:
                     d.iwriteln("/* BEGIN: data ports (conn) */")
                     for port in ports:
                         d.iwriteln(
-                            f"{port.name}(verilatedModule_.{port.name});")
+                            f"verilatedModule_.{port.name}({port.name});"
+                        )
                     d.iwriteln("/* END: data ports (conn) */")
                     d.separate()
 
