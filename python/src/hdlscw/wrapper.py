@@ -407,6 +407,12 @@ class Wrapper:
                     d.iwriteln("/* END: clock ports (conn) */")
                     d.separate()
 
+                def ctorInit(d: codegen.Dumper) -> None:
+                    for port in ports:
+                        d.iwrite(f"{port.name}(\"{port.name}\")")
+                        d.writeln(",")
+
+                self.cg.addCtorInit(ctorInit)
                 self.cg.addPublicBlock(publicBlock)
                 self.cg.addCtorBlock(ctorBlock)
 
@@ -476,6 +482,12 @@ class Wrapper:
                     d.indent_out()
                     d.iwriteln(f"}}")
 
+                def ctorInit(d: codegen.Dumper) -> None:
+                    for port in ports:
+                        d.iwrite(f"{port.name}(\"{port.name}\")")
+                        d.writeln(",")
+
+                self.cg.addCtorInit(ctorInit)
                 self.cg.addPublicBlock(publicBlock)
                 self.cg.addPrivateBlock(privateBlock)
                 self.cg.addCtorBlock(ctorBlock)
@@ -504,6 +516,12 @@ class Wrapper:
                     d.iwriteln("/* END: interrupt ports (conn) */")
                     d.separate()
 
+                def ctorInit(d: codegen.Dumper) -> None:
+                    for port in ports:
+                        d.iwrite(f"{port.name}(\"{port.name}\")")
+                        d.writeln(",")
+
+                self.cg.addCtorInit(ctorInit)
                 self.cg.addPublicBlock(publicBlock)
                 self.cg.addCtorBlock(ctorBlock)
 
@@ -530,6 +548,12 @@ class Wrapper:
                     d.iwriteln("/* END: data ports (conn) */")
                     d.separate()
 
+                def ctorInit(d: codegen.Dumper) -> None:
+                    for port in ports:
+                        d.iwrite(f"{port.name}(\"{port.name}\")")
+                        d.writeln(",")
+
+                self.cg.addCtorInit(ctorInit)
                 self.cg.addPublicBlock(publicBlock)
                 self.cg.addCtorBlock(ctorBlock)
 
