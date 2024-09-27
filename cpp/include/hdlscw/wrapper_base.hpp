@@ -35,6 +35,17 @@ struct wrapper_base {
         return *((T const *)x.ptr);
     }
 
+    template <typename T>
+    T &get(const std::string &name)
+    {
+        auto &x = objects_.at(name);
+
+        if (typeid(T) != x.type_index)
+            throw std::runtime_error("not the expected type");
+
+        return *((T *)x.ptr);
+    }
+
     virtual ~wrapper_base() = default;
 
 protected:
