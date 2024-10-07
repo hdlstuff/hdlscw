@@ -6,6 +6,7 @@ import sys
 from typing import *
 import dataclasses
 import importlib
+import runpy
 
 
 def main() -> None:
@@ -16,6 +17,11 @@ def main() -> None:
         "--import-package", "-i",
         type=str, required=False, action="append", nargs=1,
         help="Python packages that provide 'InterfaceHandler's to load prior to generation."
+    )
+    g.add_argument(
+        "--run", "-r",
+        type=str, required=False, action="append", nargs=1,
+        help="Execute the provided Python scripts, these scripts might register new 'InterfaceHandler's or protocols. Executed after '-i's."
     )
     g.add_argument("--input-hdlinfo", type=str, required=True,
                    help="Input .hdlinfo.json file.")
@@ -34,6 +40,11 @@ def main() -> None:
             name = import_package[0]
             print(f"importing: {name}")
             importlib.import_module(name)
+
+    if ns.run is not None:
+        for x in ns.run:
+            run_path: str = x[0]
+            runpy.run_path(run_path)
 
     inputHdlInfo = ns.input_hdlinfo
     singleFile = ns.single_file

@@ -9,11 +9,12 @@ from . import codegen
 
 
 __all__ = [
+    "InterfaceHandler",
+    "StatefulInterfaceHandler",
     "registerInterfaceHandlerCustom",
     "registerInterfaceHandler",
     "getInterfaceHandler",
     "registeredInterfaceHandlers",
-    "InterfaceHandler",
     "WrapperConfig",
     "Wrapper"
 ]
@@ -23,35 +24,6 @@ _interfaceHandlers: Dict[str, Type["InterfaceHandler"]] = {}
 
 T = TypeVar('T')
 TT = TypeVar('TT')
-
-
-def registerInterfaceHandlerCustom(name: str) -> Callable[[Type[T]], Type[T]]:
-    def wrap(cls: Type[TT]) -> Type[TT]:
-        if name in _interfaceHandlers:
-            # TODO have a custom exception class
-            raise RuntimeError(
-                "attempt to register an interface handler with an already taken name")
-        _interfaceHandlers[name] = cls
-        return cls
-    return wrap
-
-
-def registerInterfaceHandler(cls: Type[T]) -> Type[T]:
-    name = cls.__qualname__
-    if name in _interfaceHandlers:
-        # TODO have a custom exception class
-        raise RuntimeError(
-            "attempt to register an interface handler with an already taken name")
-    _interfaceHandlers[name] = cls
-    return cls
-
-
-def getInterfaceHandler(name: str) -> Optional[Type["InterfaceHandler"]]:
-    return _interfaceHandlers.get(name, None)
-
-
-def registeredInterfaceHandlers() -> Iterator["InterfaceHandler"]:
-    return _interfaceHandlers.values()
 
 
 class InterfaceHandler(abc.ABC):
@@ -68,6 +40,114 @@ class InterfaceHandler(abc.ABC):
         Returns:
             bool: `True` if the interface transform could process the interface, `False` otherwise.
         """
+
+
+class StatefulInterfaceHandler(abc.ABC):
+    def __init__(self, wrapper: "Wrapper", cg: codegen.CodeGen) -> None:
+        """The constructor of a stateful interface handler. Guaranteed to be executed only once."""
+        self._wrapper = wrapper
+        self._cg = cg
+
+    @property
+    def wrapper(self) -> "Wrapper":
+        return self._wrapper
+
+    @property
+    def cg(self) -> codegen.CodeGen:
+        return self._cg
+
+    def getOption(self, name: str, t: Callable[[str], T], default: T) -> T:
+        return self.wrapper.config.requestOption(name, t, default)
+
+    def getOptionStr(self, name: str, default: str) -> str:
+        return self.getOption(name, str, default)
+
+    def getOptionInt(self, name: str, default: int) -> int:
+        return self.getOption(name, int, default)
+
+    @staticmethod
+    @abc.abstractmethod
+    def checkKind(kind: str) -> bool:
+        """Used to check if this interface handler can be used for handling an interface with the given kind.
+
+        Args:
+            kind (str): Interface kind.
+
+        Returns:
+            bool: `True` if the interface can be handled.
+        """
+        return False
+
+    @abc.abstractmethod
+    def processInterface(self, interface: hdlinfo.Interface) -> None:
+        """The handler might modify the wrapper and the codegen from the interface.
+
+        Args:
+            interface (hdlinfo.Interface): 
+        """
+        pass
+
+
+def transformStatefulInterfaceHandler(t: Type[StatefulInterfaceHandler]) -> Type[InterfaceHandler]:
+    attrName = f"{t.__qualname__.replace(".", "_")}_Wrapped"
+
+    class StatelessInterfaceHandler(InterfaceHandler):
+        @staticmethod
+        def processInterface(wrapper: "Wrapper", cg: codegen.CodeGen, interface: hdlinfo.Interface) -> bool:
+            if not t.checkKind(interface.kind):
+                return False
+
+            o: StatefulInterfaceHandler = wrapper.getAttr(attrName)
+
+            if o is None:
+                o = wrapper.setAttr(attrName, t(wrapper, cg))
+
+            o.processInterface(interface)
+            return True
+
+    return StatelessInterfaceHandler
+
+
+def registerInterfaceHandlerCustom(name: str) -> Callable[[Type[T]], Type[T]]:
+    def wrap(cls: Type[TT]) -> Type[TT]:
+        if name in _interfaceHandlers:
+            # TODO have a custom exception class
+            raise RuntimeError(
+                "attempt to register an interface handler with an already taken name"
+            )
+        cls = transformStatefulInterfaceHandler(cls) \
+            if issubclass(cls, StatefulInterfaceHandler) else cls
+        if not issubclass(cls, InterfaceHandler):
+            raise RuntimeError(
+                "Attempt to register an interface handler not deriving from 'InterfaceHandler'!"
+            )
+        _interfaceHandlers[name] = cls
+        return cls
+    return wrap
+
+
+def registerInterfaceHandler(cls: Type[T]) -> Type[T]:
+    name = cls.__qualname__
+    if name in _interfaceHandlers:
+        # TODO have a custom exception class
+        raise RuntimeError(
+            "attempt to register an interface handler with an already taken name")
+    cls = transformStatefulInterfaceHandler(cls) \
+        if issubclass(cls, StatefulInterfaceHandler) else cls
+    if not issubclass(cls, InterfaceHandler):
+        raise RuntimeError(
+            "Attempt to register an interface handler not deriving from 'InterfaceHandler'!"
+        )
+    _interfaceHandlers[name] = cls
+    return cls
+
+
+def getInterfaceHandler(name: str) -> Optional[Type["InterfaceHandler"]]:
+    return _interfaceHandlers.get(name, None)
+
+
+def registeredInterfaceHandlers() -> Iterator["InterfaceHandler"]:
+    return _interfaceHandlers.values()
 
 
 _alreadyRequestedOptions: List[str] = []
