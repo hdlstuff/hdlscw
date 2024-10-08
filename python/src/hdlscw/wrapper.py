@@ -347,9 +347,9 @@ class Wrapper:
         if (ports := self.module.filterPorts(lambda port: port.kind == hdlinfo.PortKind.reset and port.name == name)) is not None:
             for port in ports:
                 if activeHigh and port.sensitivity == hdlinfo.PortSensitivity.resetActiveHigh:
-                    return f"verilatedModule_.{port.name}"
+                    return f"{port.name}"
                 elif not activeHigh and port.sensitivity == hdlinfo.PortSensitivity.resetActiveLow:
-                    return f"verilatedModule_.{port.name}"
+                    return f"{port.name}"
                 else:
                     return f"{port.name}_INVERTED_"
         raise KeyError(f"request reset port '{name}' not found")
@@ -368,7 +368,7 @@ class Wrapper:
         """
         if (ports := self.module.filterPorts(lambda port: port.kind == hdlinfo.PortKind.clock and port.name == name)) is not None:
             for port in ports:
-                return f"verilatedModule_.{port.name}"
+                return f"{port.name}"
         raise KeyError(f"request clock port '{name}' not found")
 
     def getAttr(self, name: str) -> Any:
