@@ -15,12 +15,16 @@ __all__ = [
     "registerInterfaceHandler",
     "getInterfaceHandler",
     "registeredInterfaceHandlers",
+    "Hook",
+    "registerHook",
     "WrapperConfig",
     "Wrapper"
 ]
 
 
 _interfaceHandlers: Dict[str, Type["InterfaceHandler"]] = {}
+_hooks: Dict[str, Type["Hook"]] = {}
+_hooksList: List[Tuple[str, Type["Hook"]]] = []
 
 T = TypeVar('T')
 TT = TypeVar('TT')
@@ -148,6 +152,37 @@ def getInterfaceHandler(name: str) -> Optional[Type["InterfaceHandler"]]:
 
 def registeredInterfaceHandlers() -> Iterator["InterfaceHandler"]:
     return _interfaceHandlers.values()
+
+
+class Hook(abc.ABC):
+    @staticmethod
+    @abc.abstractmethod
+    def run(wrapper: "Wrapper", cg: codegen.CodeGen, module: hdlinfo.Module) -> bool:
+        """Executed after parsing the `hdlinfo.Module` but before processing the ports and interfaces.
+
+        Args:
+            wrapper (Wrapper): the wrapper.
+            cg (codegen.Codegen): associated code generator.
+            module (Module): the module object.
+
+        Returns:
+            bool: `True` if the hook completes successfully, `False` otherwise.
+        """
+
+
+def registerHook(cls: Type[T]) -> Type[T]:
+    name = cls.__qualname__
+    if name in _hooks:
+        # TODO have a custom exception class
+        raise RuntimeError(
+            "attempt to register a hook with an already taken name")
+    if not issubclass(cls, Hook):
+        raise RuntimeError(
+            "Attempt to register a hook not deriving from 'Hook'!"
+        )
+    _hooks[name] = cls
+    _hooksList.append((name, cls))
+    return cls
 
 
 _alreadyRequestedOptions: List[str] = []
@@ -437,6 +472,11 @@ class Wrapper:
             cg.addImplIncludeBlock(implIncludeBlock)
 
         initBasic()
+
+        for hookName, hookType in _hooksList:
+            if not hookType.run(self, self.cg, self.module):
+                # TODO have a specific exception class
+                raise RuntimeError(f"Hook '{hookName}' has failed to execute!")
 
         def processPorts() -> None:
             # processes ports
