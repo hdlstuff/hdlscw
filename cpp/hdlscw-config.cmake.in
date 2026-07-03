@@ -209,6 +209,23 @@ function(hdlscw)
         list(APPEND HDLSCW_ARGS "--verilated-module-name" "${HDLSCW_VERILATED_MODULE_NAME}")
     endif()
 
+    set(HDLSCW_DEPENDS)
+    set(_HDLSCW_ARG_IS_RUN_SCRIPT OFF)
+    foreach(_HDLSCW_ARG IN LISTS HDLSCW_ARGS)
+        if(_HDLSCW_ARG_IS_RUN_SCRIPT)
+            get_filename_component(
+                _HDLSCW_RUN_SCRIPT
+                "${_HDLSCW_ARG}"
+                ABSOLUTE
+                BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
+            )
+            list(APPEND HDLSCW_DEPENDS "${_HDLSCW_RUN_SCRIPT}")
+            set(_HDLSCW_ARG_IS_RUN_SCRIPT OFF)
+        elseif(_HDLSCW_ARG STREQUAL "-r" OR _HDLSCW_ARG STREQUAL "--run")
+            set(_HDLSCW_ARG_IS_RUN_SCRIPT ON)
+        endif()
+    endforeach()
+
     if(HDLSCW_OUTPUT_CLASS_NAME)
         list(APPEND HDLSCW_ARGS "--output-class-name" "${HDLSCW_OUTPUT_CLASS_NAME}")
         list(APPEND HDLSCW_ARGS "--output-hpp" "${HDLSCW_OUTPUT_CLASS_NAME}.hpp")
@@ -238,5 +255,6 @@ function(hdlscw)
         FUNC_NAME "hdlscw"
         COMMAND "${HDLSCW_COMMAND}"
         ARGS ${HDLSCW_ARGS}
+        DEPENDS ${HDLSCW_DEPENDS}
     )
 endfunction()
